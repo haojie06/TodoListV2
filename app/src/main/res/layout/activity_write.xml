@@ -5,24 +5,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/background2"
     android:orientation="vertical"
-    android:background="#FFFFCD"
+
 
     >
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="0.7"
-        android:text="请输入标题"
-        android:textSize="30dp" />
-    <EditText
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:id="@+id/title_edit"
-        android:textSize="35sp"
-        />
 
     <TextView
         android:layout_width="match_parent"
@@ -34,8 +22,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:orientation="horizontal"
         android:layout_weight="0.7"
+        android:orientation="horizontal"
         >
 
 
@@ -43,66 +31,81 @@
             android:id="@+id/gray"
             android:layout_width="30dp"
             android:layout_height="match_parent"
-            android:background="@drawable/huise"
-            android:layout_weight="1"/>
+            android:layout_weight="1"
+            android:alpha="0.8"
+            android:background="@drawable/huise" />
 
         <Button
             android:id="@+id/green"
             android:layout_width="30dp"
             android:layout_height="match_parent"
-            android:background="@drawable/lvse"
-            android:layout_weight="1"/>
+            android:layout_weight="1"
+            android:alpha="0.6"
+            android:background="@drawable/lvse" />
 
         <Button
             android:id="@+id/blue"
             android:layout_width="30dp"
             android:layout_height="match_parent"
-            android:background="@drawable/lan"
-            android:layout_weight="1"/>
+            android:layout_weight="1"
+            android:alpha="0.6"
+            android:background="@drawable/lan" />
 
         <Button
             android:id="@+id/yellow"
             android:layout_width="30dp"
             android:layout_height="match_parent"
-            android:background="@drawable/huangse"
-            android:layout_weight="1"/>
+            android:layout_weight="1"
+            android:alpha="0.6"
+            android:background="@drawable/huangse" />
 
         <Button
             android:id="@+id/red"
             android:layout_width="30dp"
             android:layout_height="match_parent"
-            android:background="@drawable/hongse"
-            android:layout_weight="1"/>
+            android:layout_weight="1"
+            android:alpha="0.6"
+            android:background="@drawable/hongse" />
 
     </LinearLayout>
 
 
-
-    <EditText
-        android:layout_margin="1dp"
-            android:gravity="top"
-
+    <com.example.haojie06.todolist.LinedEditText
+        android:id="@+id/content_edit"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:id="@+id/content_edit"
+        android:layout_margin="1dp"
             android:layout_weight="5"
+        android:alpha="0.6"
             android:background="@drawable/writehuise"
-            android:textSize="30sp"/>
+        android:gravity="top|center"
+        android:textSize="35sp" />
 
 
-
-
-
-
-
-    <android.support.design.widget.FloatingActionButton
-        android:layout_width="wrap_content"
+    <FrameLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|right"
-        android:id="@+id/fab_ok"
-        />
+        android:orientation="horizontal">
+
+
+        <Button
+            android:id="@+id/set_clock"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="start|bottom"
+            android:text="设置闹钟" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fab_ok"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_margin="2dp" />
+
+    </FrameLayout>
 
 </LinearLayout>
+
 
 
 

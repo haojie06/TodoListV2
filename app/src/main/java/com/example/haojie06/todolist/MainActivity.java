@@ -1,11 +1,17 @@
 package com.example.haojie06.todolist;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.ColorSpace;
+import android.provider.ContactsContract;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Adapter;
@@ -15,6 +21,12 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.haojie06.todolist.Notice.ClockService;
+
+import org.litepal.crud.DataSupport;
+import org.litepal.exceptions.DataSupportException;
+import org.litepal.tablemanager.Connector;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
@@ -23,22 +35,121 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.OutputStreamWriter;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-    private ListView listView;
+    public List<Things> thingsList;
     String Num;
-    final List<Things> thingsList = new ArrayList<>();
-    private  myBaseAdapter myAdapter;
      TextView undoNum;
+    ThingsAdapter adapter;
+    ItemTouchHelper helper = new ItemTouchHelper(new ItemTouchHelper.Callback() {
+        @Override
+        public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+            final int dragFlags;
+            final int swipeFlags;
+            if (recyclerView.getLayoutManager() instanceof GridLayoutManager) {
+                dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN | ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT;
+                swipeFlags = 0;
+            } else {
+                dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN;
+                swipeFlags = ItemTouchHelper.START | ItemTouchHelper.END;
+            }
+            return makeMovementFlags(dragFlags, swipeFlags);
+        }
 
+        @Override
+        public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+            int fromPosition = viewHolder.getAdapterPosition();//得到拖动的holder的position
+
+            int toPosition = target.getAdapterPosition();//得到目标holder的position
+            int temp = 0;
+            //执行交换
+            if (fromPosition < toPosition) {
+                for (int i = fromPosition; i < toPosition; i++) {
+                    temp = 0;
+                    temp = thingsList.get(i).getnum();
+                    thingsList.get(i).setnum(thingsList.get(i + 1).getnum());
+                    thingsList.get(i).save();
+                    thingsList.get(i + 1).setnum(temp);
+                    thingsList.get(i + 1).save();
+                    Collections.swap(thingsList, i, i + 1);
+                }
+            } else {
+                for (int i = fromPosition; i > toPosition; i--) {
+                    temp = 0;
+                    temp = thingsList.get(i).getnum();
+                    thingsList.get(i).setnum(thingsList.get(i - 1).getnum());
+                    thingsList.get(i - 1).setnum(temp);
+                    thingsList.get(i).save();
+                    thingsList.get(i - 1).save();
+                    Collections.swap(thingsList, i, i - 1);
+                }
+            }
+
+            adapter.notifyItemMoved(fromPosition, toPosition);
+            return true;
+        }
+
+        @Override
+        public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+            int position = viewHolder.getAdapterPosition();
+
+            Things delThing = thingsList.get(position);
+            delThing.delete();
+            thingsList.remove(position);
+            Num = String.valueOf(thingsList.size());
+            undoNum.setText(Num);
+            adapter.notifyItemRemoved(position);
+
+        }
+
+        /*拖拽时改变颜色
+        @Override
+        public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
+            if (actionState != ItemTouchHelper.ACTION_STATE_IDLE){
+                viewHolder.itemView.setBackgroundColor(Color.LTGRAY);
+            }
+            super.onSelectedChanged(viewHolder, actionState);
+        }
+
+        @Override
+        public void clearView(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+            super.clearView(recyclerView, viewHolder);
+            viewHolder.itemView.setBackgroundColor(0);
+        }*/
+    });
+    private RecyclerView recyclerView;
 
     protected void onCreate(Bundle savedInstanceState) {
+        //活动开始时创建活动
+        Intent startIntent = new Intent(this, ClockService.class);
+        startService(startIntent);
+        //建立数据库  （使用litepal
+        thingsList = new ArrayList<>();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Connector.getDatabase();
+        Log.d("msg", "创建数据库");
+        try {
+            thingsList = DataSupport.order("num").find(Things.class);
+        } catch (DataSupportException ex) {
+            ex.printStackTrace();
+        }
+        //建立recycleview
+        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recycle_view);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(layoutManager);
+        adapter = new ThingsAdapter(thingsList);
+        recyclerView.setAdapter(adapter);
+        helper.attachToRecyclerView(recyclerView);
         undoNum = (TextView)findViewById(R.id.undoNum);//显示未完成的任务数量
+
+        adapter = new ThingsAdapter(thingsList);
+        recyclerView.setAdapter(adapter);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -51,51 +162,13 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Intent intent = new Intent(MainActivity.this,WriteActivity.class);
                 startActivityForResult(intent,4);
-                //startActivityForResult();
             }
         });
+        //现在还无法排序！！！！！！！！！！！！！！！！！！！！！！！！！！！！
 
-
-
-            listView = (ListView)findViewById(R.id.list_view);
-            //读取储存的信息
-            try{
-                in = openFileInput("DAT");
-                reader = new BufferedReader(new InputStreamReader(in));
-                    while (reader.readLine() != null){
-                    String inputTitle,inputContent,inputTime;
-                    String inputColor;
-                    inputTitle = reader.readLine();
-                    inputContent = reader.readLine();
-                    inputTime = reader.readLine();
-                    inputColor = reader.readLine();
-                    Things inputThing = new Things(inputTitle,inputContent,inputTime,inputColor);//inputColor
-                    thingsList.add(inputThing);
-                }
-                reader.close();
-            }catch (IOException ex){ex.printStackTrace();}finally {
-
-            }
-            myAdapter = new myBaseAdapter(getApplicationContext(),thingsList);
-             listView.setAdapter(myAdapter);
-            Num = String.valueOf(thingsList.size());
-            undoNum.setText(Num);
         //获得初始时候还剩下多少todo
          Num = String.valueOf(thingsList.size());
         undoNum.setText(Num);
-        //长按完成任务！
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> adapterView, View view,int poistion, long l) {
-                thingsList.remove(poistion);
-                myAdapter.notifyDataSetChanged();
-
-                Toast.makeText(MainActivity.this,"Great!",Toast.LENGTH_SHORT).show();
-                Num = String.valueOf(thingsList.size());
-                undoNum.setText(Num);
-                return false;
-            }
-        });
 
     }
 
@@ -111,18 +184,26 @@ public class MainActivity extends AppCompatActivity {
                 int code = resultCode;
                 String str = data.getStringExtra("obj");
                 Log.e("msg",str);
-
-                String getTitle,getContent,getTime;
-                String getColor;
-                getTitle = data.getStringExtra("title");
+                String getContent, getTime;
+                String getColor, getClockTime;
+                //获取当前id
                 getContent = data.getStringExtra("content");
                 getTime = data.getStringExtra("time");
                 getColor = data.getStringExtra("color");
-                Things recThing = new Things(getTitle,getContent,getTime,getColor);//getColor
+                getClockTime = data.getStringExtra("clockTime");
+                Things recThing = new Things();//getColor
+                recThing.setColor(getColor);
+                recThing.setContent(getContent);
+                recThing.setTime(getTime);
+                recThing.setnum(thingsList.size());
+                recThing.setClockTime(getClockTime);
+                //将对象储存至数据库
+                recThing.save();
+                //添加到list用于显示
                 thingsList.add(recThing);
                 Num = String.valueOf(thingsList.size());
                 undoNum.setText(Num);
-                myAdapter.notifyDataSetChanged();
+                adapter.notifyDataSetChanged();
 
             }
         }
@@ -130,39 +211,15 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        for (Things th : thingsList)
+            th.save();
+        Toast.makeText(MainActivity.this, "Bye bye", Toast.LENGTH_SHORT).show();
         super.onDestroy();
         Log.e("Ondestroy","I am running");
-        Toast.makeText(MainActivity.this,"bye,bye~",Toast.LENGTH_SHORT).show();
-        save(thingsList);
+
 
     }
 
-    //文件储存
-    public void save(List<Things> thingsList){
-        int size = thingsList.size();
-        FileOutputStream out = null;
-        BufferedWriter writer = null;
-        try{
-            out = openFileOutput("DAT",MODE_PRIVATE);
-            writer = new BufferedWriter(new OutputStreamWriter(out));
-            for(int i = 0;i < size;i++)
-            {   String title,content,time,color;
-                title = thingsList.get(i).getTitle();
-                content = thingsList.get(i).getContent();
-                time = thingsList.get(i).getTime();
-                color = thingsList.get(i).getColor();
-                writer.newLine();
-                writer.write(title);
-                writer.newLine();
-                writer.write(content);
-                writer.newLine();
-                writer.write(time);
-               writer.newLine();
-                writer.write(color);
-
-            }
-            writer.close();
-        }catch (IOException ex){ex.printStackTrace();}
-    }
 }
+
 
